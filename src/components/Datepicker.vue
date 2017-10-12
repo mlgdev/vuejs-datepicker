@@ -44,13 +44,18 @@
             </header>
             <div :class="isRtl ? 'flex-rtl' : ''">
               <span class="cell day-header" v-for="d in daysOfWeek" :key="d.timestamp">{{ d }}</span>
-              <span class="cell day blank" v-for="d in blankDays" :key="d.timestamp"></span><!--
+              <span class="cell day disabled grayed-out"
+                    v-for="d in prevMonthDays"
+                    :key="d">{{ d }}</span><!--
               --><span class="cell day"
                   v-for="day in days"
                   :key="day.timestamp"
                   track-by="timestamp"
                   v-bind:class="dayClasses(day)"
-                  @click="selectDate(day)">{{ day.date }}</span>
+                  @click="selectDate(day)">{{ day.date }}</span><!--
+              --><span class="cell day disabled grayed-out"
+                       v-for="d in nextMonthDays"
+                       :key="d">{{ d }}</span>
             </div>
         </div>
 
@@ -204,13 +209,40 @@ export default {
      * Used to show amount of empty cells before the first in the day calendar layout
      * @return {Number}
      */
-    blankDays () {
+    prevMonthDays () {
       const d = this.pageDate
-      let dObj = new Date(d.getFullYear(), d.getMonth(), 1, d.getHours(), d.getMinutes())
+      let currDateObj = new Date(d.getFullYear(), d.getMonth(), 1, d.getHours(), d.getMinutes())
       if (this.mondayFirst) {
-        return dObj.getDay() > 0 ? dObj.getDay() - 1 : 6
+        return currDateObj.getDay() > 0 ? currDateObj.getDay() - 1 : 6
       }
-      return dObj.getDay()
+      // day of week for 1st day of month
+      // aka number of blank days to insert before
+      let numDays = currDateObj.getDay()
+      // get last day of previous month
+      let prevDateObj = new Date(d.getFullYear(), d.getMonth(), 0, d.getHours(), d.getMinutes())
+      let lastDay = prevDateObj.getDate()
+      // first day of previous month to show
+      let start = lastDay - numDays + 1
+      // add remaining days of previous month
+      let arr = []
+      for (var i = 0; i < numDays; i++) {
+        arr.push(start + i)
+      }
+      return arr
+    },
+    nextMonthDays () {
+      const d = this.pageDate
+      let dObj = new Date(d.getFullYear(), (d.getMonth() + 1), 0, d.getHours(), d.getMinutes())
+      // day of week for last day of the current month
+      let lastDay = dObj.getDay()
+      // number of blank days to insert after
+      let numDays = 7 - (lastDay + 1)
+      // return array of days to show after
+      let arr = []
+      for (var i = 1; i <= numDays; i++) {
+        arr.push(i)
+      }
+      return arr
     },
     daysOfWeek () {
       if (this.mondayFirst) {
@@ -837,6 +869,10 @@ $width = 300px
 
     .disabled
         color #ddd
+        cursor default
+    .grayed-out
+        color #bac2c7
+        background #edf2f5
         cursor default
     .flex-rtl
         display flex
